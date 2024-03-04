@@ -1,36 +1,36 @@
 import { Request, Response, route } from './httpSupport'
 import { renderHtml } from './uiSupport'
 
-import OpenAI from 'openai'
+import { ChatOpenAI } from "@langchain/openai";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
 
-if (!process.env) {
-    process.env = {}
+async function langChainPipe(openaiApiKey: string): Promise<string> {
+    const prompt = ChatPromptTemplate.fromMessages([
+        ["human", "Tell me a short joke about {topic}"],
+    ]);
+    const model = new ChatOpenAI({ openAIApiKey: openaiApiKey });
+    const outputParser = new StringOutputParser();
+
+    const chain = prompt.pipe(model).pipe(outputParser);
+
+    return chain.invoke({
+        topic: "ice cream",
+    });
 }
 
 async function GET(req: Request): Promise<Response> {
     const openaiApiKey = req.secret?.openaiApiKey as string;
-    const openai = new OpenAI({ apiKey: openaiApiKey })
-
-    const completion = await openai.chat.completions.create({
-        messages: [{ role: "system", content: "You are a helpful assistant." }],
-        model: "gpt-3.5-turbo",
-    });
-
-    return new Response(renderHtml(completion.choices[0].message.content as string))
+    const content = await langChainPipe(openaiApiKey);
+    return new Response(renderHtml(content));
 }
 
 async function POST(req: Request): Promise<Response> {
     const openaiApiKey = req.secret?.openaiApiKey as string;
-    const openai = new OpenAI({ apiKey: openaiApiKey })
-
-    const completion = await openai.chat.completions.create({
-        messages: [{ role: "system", content: "You are a helpful assistant." }],
-        model: "gpt-3.5-turbo",
-    });
-
-    return new Response(renderHtml(completion.choices[0].message.content as string))
+    const content = await langChainPipe(openaiApiKey);
+    return new Response(renderHtml(content));
 }
 
 export default async function main(request: string) {
-    return await route({ GET, POST }, request)
+    return await route({ GET, POST }, request);
 }
