@@ -1,4 +1,4 @@
-import main from './index'
+import main from './agentMarvinX'
 import 'dotenv/config'
 
 async function execute(inputObj: any) {
@@ -29,7 +29,7 @@ async function test() {
     const getResult = await execute({
         method: 'GET',
         path: '/ipfs/QmVHbLYhhYA5z6yKpQr4JWr3D54EhbSsh7e7BFAAyrkkMf',
-        queries: {},
+        queries: { chatQuery: ["Who are you?"] },
         secret: { openaiApiKey: process.env.OPENAI_API_KEY },
         headers: {},
     })
@@ -38,9 +38,7 @@ async function test() {
     const postResult = await execute({
         method: 'POST',
         path: '/ipfs/QmVHbLYhhYA5z6yKpQr4JWr3D54EhbSsh7e7BFAAyrkkMf',
-        queries: {
-            page: ['1'],
-        },
+        queries: { chatQuery: ["What the latest direction of Phala?"] },
         secret: { openaiApiKey: process.env.OPENAI_API_KEY },
         headers: {},
         body: JSON.stringify(sampleInput)
