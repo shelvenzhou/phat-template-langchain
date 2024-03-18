@@ -1,4 +1,4 @@
-import main from './agentMarvinX'
+import main from './agentCsv'
 import 'dotenv/config'
 
 async function execute(inputObj: any) {
