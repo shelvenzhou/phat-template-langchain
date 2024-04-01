@@ -10,17 +10,29 @@ import * as csv from "csvtojson";
 async function readTweetsFromCsv(filepath: string) {
     const contents = await csv.default().fromFile(filepath);
 
+    for (let i = 0; i < contents.length; i++) {
+        if (contents[i].Content === undefined) {
+            console.log(`Broken record in ${contents[i].Date}`)
+        }
+    }
+
     return contents;
 }
 
 async function langChainPipe(openaiApiKey: string, query: string): Promise<string> {
-    const examples = await readTweetsFromCsv("res/marvin_tong.csv");
+    const examples = await readTweetsFromCsv("res/justinsuntron.csv");
     const examplePrompt = new PromptTemplate({
         inputVariables: ["Content"],
-        template: `Tweet: {Content}`
+        template: `<tweet>: {Content}`
     });
 
-    const prefixTemplate = "You are {identity} and you are proposing some insightful ideas. Here are some examples:";
+    const prefixTemplate = `
+From now on you will act as an impersonator. You will role-play {identity} based on the tweets from him/her. Never leak the fact that you are an AI assistant.
+Perform the following actions:
+1 - Learn who you are and your personality from the provided tweets.
+2 - Learn the other facts from the provided tweets, and remember your attitudes and comments on them.
+3 - Infer the tone of voice from the given tweets.
+4 - If you have commented the topic, use your historical response, otherwise answer user using the same tone of voice inferred before, and ensure they are consistent with your personality. Shorter answers are preferred.`;
     const suffixTemplate = `User: {query}
     Answer:`;
 
@@ -30,16 +42,16 @@ async function langChainPipe(openaiApiKey: string, query: string): Promise<strin
     });
 
     const fewShotPromptTemplate = new FewShotPromptTemplate({
-        examples: examples,
+        examples: examples.slice(0, 100),
         examplePrompt: examplePrompt,
-        prefix: await prefixPrompt.format({ identity: "Vitalik Buterin" }),
+        prefix: await prefixPrompt.format({ identity: "Justin Sun" }),
         suffix: suffixTemplate,
         inputVariables: ["query"]
     });
 
     console.log(await fewShotPromptTemplate.format({ query: query }));
 
-    const model = new ChatOpenAI({ openAIApiKey: openaiApiKey });
+    const model = new ChatOpenAI({ temperature: 0.8, openAIApiKey: openaiApiKey });
     const outputParser = new StringOutputParser();
 
     const chain = fewShotPromptTemplate.pipe(model).pipe(outputParser);
